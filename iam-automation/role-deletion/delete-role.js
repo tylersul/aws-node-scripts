@@ -15,99 +15,78 @@ let params = {
     MaxItems: items
 }
 
+// List the number of roles in AWS account based on user input
 let roles = iam.listRoles(params, function(err, data) {
     if (err) {
         console.log(err);
     } else {
+
+        // Get the array of roles from the "data" response
         let roles = data.Roles;
         
+        // Iterate of the array of roles
         roles.forEach(function(role) {
+
+            // Set required parameter of RoleName to use GetRole AWS API
             let params = {
                 RoleName: role.RoleName
             }
+
             iam.getRole(params, function(err, roleDetails) {
                 if (err) {
-                    console.log(err)
-                } else {
-                    
-                    if (roleDetails.Role.RoleLastUsed.LastUsedDate == undefined && (roleDetails.Role.RoleName != "AWS-InnovationLabs-Chicago-ReadOnly" ||
-                            roleDetails.Role.RoleName != "AWS-InnovationLabs-Chicago-Admin")) { 
+                    console.log("ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20))
+                } else if (roleDetails.Role.RoleLastUsed.LastUsedDate == undefined){
                         
-                        console.log("ROLE: " + roleDetails.Role.RoleName + "\n LAST USED: " + roleDetails.Role.RoleLastUsed.LastUsedDate + "\n")
-                        
-                        iam.listAttachedRolePolicies(params, function(err, rolePolicies) {
-                            if (err) {
-                                console.log(err);
-                            } else {
+                    console.log("ROLE TO DELETE: " + roleDetails.Role.RoleName + "\n")
 
-                                let policies = rolePolicies.AttachedPolicies;
-
-                                policies.forEach(function(policy) {
-
-                                    let policyParams = {
-                                        PolicyArn: policy.PolicyArn,
-                                        RoleName: role.RoleName
-                                    }
-
-                                    iam.detachRolePolicy(policyParams, function(err, removedPolicy) {
-                                        if (err) {
-                                            console.log(err);
-                                        } else {
-                                            console.log("Attached policy to be detached for " + roleDetails.Role.RoleName + ": " + policyParams.PolicyArn)
-                                            console.log("Removal response: " + removedPolicy.ResponseMetadata.RequestId + "\n")
-                                        }
-                                    });
-                                });
-                            }
-                        });
-
-                        let instanceProfileParams = {
-                            RoleName: role.RoleName
-                        }
-
-                        iam.listInstanceProfilesForRole(instanceProfileParams, function(err, removedProfile) {
-                            if (err) {
-                                console.log(err)
-                            } else {
-                                console.log("Instance Profile names for: " + role.RoleName)
-                                console.log(removedProfile)
-                                console.log("===========================================================\n")
-                                
-                                removedProfile.InstanceProfiles.forEach(function(profile) {
-                                    let removeProfileParams = {
-                                        InstanceProfileName: profile.InstanceProfileName,
-                                        RoleName: role.RoleName
-                                    }
-
-                                    iam.removeRoleFromInstanceProfile(removeProfileParams, function(err, removed) {
-                                        if (err) {
-                                            console.log(err);
-                                        } else {
-                                            console.log("Removed instance profile");
-                                            console.log(removed)
-                                        }
-                                    })
-                                })
-                            }
-                        })
-
-                        let deleteRoleParams = {
-                            RoleName: role.RoleName
-                        }
-
-                        iam.deleteRole(deleteRoleParams, function(err, deletedRole) {
-                            if (err) {
-                                console.log("ERROR FOR: " + role.RoleName + "\n");
-                                console.log(err + "\n");
-                                console.log("===========================================================\n")
-                            } else {
-                                console.log("ROLE DELETED: " + role.RoleName)
-                                console.log(deletedRole)
-                            }
-                        })
+                    let instanceProfileParams = {
+                        RoleName: role.RoleName
                     }
+
+                    iam.listInstanceProfilesForRole(instanceProfileParams, function(err, removedProfile) {
+                        if (err) {
+                            console.log("ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20))
+                        } else {
+                            if (removedProfile.InstanceProfiles.length > 0) {
+                                console.log("Instance Profile names for: " + role.RoleName)
+                                console.log(removedProfile.InstanceProfiles)
+                                console.log("===========================================================\n")
+                            }
+                            
+                            removedProfile.InstanceProfiles.forEach(function(profile) {
+                                let removeProfileParams = {
+                                    InstanceProfileName: profile.InstanceProfileName,
+                                    RoleName: role.RoleName
+                                }
+
+                                iam.removeRoleFromInstanceProfile(removeProfileParams, function(err, removed) {
+                                    if (err) {
+                                        console.log(err);
+                                    } else {
+                                        console.log("Removed instance profile for: " + role.RoleName);
+                                        console.log(removed)
+                                    }
+                                })
+                            })
+                        }
+                    })
+
+                    let deleteRoleParams = {
+                        RoleName: role.RoleName
+                    }
+
+                    iam.deleteRole(deleteRoleParams, function(err, deletedRole) {
+                        if (err) {
+                            console.log("DELETE ERROR FOR: " + role.RoleName);
+                            console.log(err.toString().substring(0, 100));
+                            console.log("===========================================================\n")
+                        } else {
+                            console.log("ROLE DELETED: " + role.RoleName)
+                        }
+                    })
                 }
             })
         })
     }
 });
+
