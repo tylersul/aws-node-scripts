@@ -22,7 +22,7 @@ let roles = iam.listRoles(params, function(err, data) {
     } else {
 
         // Get the array of roles from the "data" response
-        let roles = data.Roles;
+        let roles = data.Roles
         
         // Iterate of the array of roles
         roles.forEach(function(role) {
@@ -36,63 +36,73 @@ let roles = iam.listRoles(params, function(err, data) {
                 if (err) {
                     console.log("GET ROLE ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20));
 
-                } else if (roleDetails.Role.RoleLastUsed.LastUsedDate == undefined){
-                        
-                    console.log("ROLE TO DELETE: " + roleDetails.Role.RoleName)
+                } else {
 
-                    iam.listAttachedRolePolicies(params, function(err, rolePolicies) {
-                        if (err) {
-                            console.log("LIST POLICY ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20));
-                         } else {
+                      roleLastUsedTimestamp = new Date(roleDetails.Role.RoleLastUsed.LastUsedDate)
 
-                             let policies = rolePolicies.AttachedPolicies;
+                      cutoffDate = new Date(new Date().setDate(new Date().getDate()-180))
 
-                             if (policies.length > 0) {
-                                console.log("Policies are attached to " + role.RoleName)
+                       if (roleDetails.Role.RoleLastUsed.LastUsedDate == undefined || roleLastUsedTimestamp < cutoffDate) {
+                           console.log(roleDetails.Role.RoleName + " is in the deletion time period")
+                           console.log(roleLastUsedTimestamp + " < " + cutoffDate)
 
-                                policies.forEach(function(policy) {
+                           console.log("ROLE TO DELETE: " + roleDetails.Role.RoleName)
+                           console.log("===========================================================\n")
 
-                                    let policyParams = {
-                                        PolicyArn: policy.PolicyArn,
-                                        RoleName: role.RoleName
+                           iam.listAttachedRolePolicies(params, function(err, rolePolicies) {
+                               if (err) {
+                                   console.log("LIST POLICY ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20));
+                                } else {
+       
+                                    let policies = rolePolicies.AttachedPolicies;
+       
+                                    if (policies.length > 0) {
+                                       console.log("Policies are attached to " + role.RoleName)
+       
+                                       policies.forEach(function(policy) {
+       
+                                           let policyParams = {
+                                               PolicyArn: policy.PolicyArn,
+                                               RoleName: role.RoleName
+                                           }
+          
+                                           iam.detachRolePolicy(policyParams, function(err, removedPolicy) {
+                                               if (err) {
+                                                   console.log("DETACH POLICY ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20));
+                                               } else {
+                                                   console.log("Attached policy to be detached for " + roleDetails.Role.RoleName + ": " + policyParams.PolicyArn)
+                                                   console.log("Removal response: " + removedPolicy.ResponseMetadata.RequestId + "\n")
+                                               }
+                                           });
+                                       });
                                     }
-   
-                                    iam.detachRolePolicy(policyParams, function(err, removedPolicy) {
-                                        if (err) {
-                                            console.log("DETACH POLICY ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20));
-                                        } else {
-                                            console.log("Attached policy to be detached for " + roleDetails.Role.RoleName + ": " + policyParams.PolicyArn)
-                                            console.log("Removal response: " + removedPolicy.ResponseMetadata.RequestId + "\n")
-                                        }
-                                    });
-                                });
-                             }
-                         }
-                    });
-
-                    iam.listRolePolicies(params, function(err, inlinePolicies) {
-                        if (err) {
-                            console.log("GET INLINE POLICY ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20))
-                        } else {
-
-                            let inline = inlinePolicies.PolicyNames;
-                            
-                            inline.forEach(function(inlinePolicy) {
-                                let inlineParams = {
-                                    PolicyName: inlinePolicy,
-                                    RoleName: role.RoleName
                                 }
-
-                                iam.deleteRolePolicy(inlineParams, function(err, removedInline) {
-                                    if (err) {
-                                        console.log("DETACH INLINE ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20));
-                                    } else {
-                                        console.log("Attached inline policy detached for " + roleDetails.Role.RoleName);
-                                    }
-                                })
-                            })
-                        }
-                    })
+                           });
+       
+                           iam.listRolePolicies(params, function(err, inlinePolicies) {
+                               if (err) {
+                                   console.log("GET INLINE POLICY ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20))
+                               } else {
+       
+                                   let inline = inlinePolicies.PolicyNames;
+                                   
+                                   inline.forEach(function(inlinePolicy) {
+                                       let inlineParams = {
+                                           PolicyName: inlinePolicy,
+                                           RoleName: role.RoleName
+                                       }
+       
+                                       iam.deleteRolePolicy(inlineParams, function(err, removedInline) {
+                                           if (err) {
+                                               console.log("DETACH INLINE ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20));
+                                           } else {
+                                               console.log("Attached inline policy detached for " + roleDetails.Role.RoleName);
+                                           }
+                                       })
+                                   })
+                               }
+                           })
+                       }
                 }
             })
         })

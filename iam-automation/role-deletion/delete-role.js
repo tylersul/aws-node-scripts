@@ -35,58 +35,68 @@ let roles = iam.listRoles(params, function(err, data) {
             iam.getRole(params, function(err, roleDetails) {
                 if (err) {
                     console.log("ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20))
-                } else if (roleDetails.Role.RoleLastUsed.LastUsedDate == undefined){
-                        
-                    console.log("ROLE TO DELETE: " + roleDetails.Role.RoleName + "\n")
+                } else {
 
-                    let instanceProfileParams = {
-                        RoleName: role.RoleName
-                    }
+                    roleLastUsedTimestamp = new Date(roleDetails.Role.RoleLastUsed.LastUsedDate)
 
-                    iam.listInstanceProfilesForRole(instanceProfileParams, function(err, removedProfile) {
-                        if (err) {
-                            console.log("ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20))
-                        } else {
-                            if (removedProfile.InstanceProfiles.length > 0) {
-                                console.log("Instance Profile names for: " + role.RoleName)
-                                console.log(removedProfile.InstanceProfiles)
-                                console.log("===========================================================\n")
-                            }
-                            
-                            removedProfile.InstanceProfiles.forEach(function(profile) {
-                                let removeProfileParams = {
-                                    InstanceProfileName: profile.InstanceProfileName,
-                                    RoleName: role.RoleName
+                    cutoffDate = new Date(new Date().setDate(new Date().getDate()-180))
+
+                    if (roleDetails.Role.RoleLastUsed.LastUsedDate == undefined || roleLastUsedTimestamp < cutoffDate) {
+                        console.log(roleDetails.Role.RoleName + " is in the deletion time period")
+                        console.log(roleLastUsedTimestamp + " < " + cutoffDate)
+
+                        console.log("ROLE TO DELETE: " + roleDetails.Role.RoleName)
+                        console.log("===========================================================\n")
+
+                        let instanceProfileParams = {
+                            RoleName: role.RoleName
+                        }
+    
+                        iam.listInstanceProfilesForRole(instanceProfileParams, function(err, removedProfile) {
+                            if (err) {
+                                console.log("ERROR FOR: " + role.RoleName + " MESSAGE: " + err.toString().substring(0, 20))
+                            } else {
+                                if (removedProfile.InstanceProfiles.length > 0) {
+                                    console.log("Instance Profile names for: " + role.RoleName)
+                                    console.log(removedProfile.InstanceProfiles)
+                                    console.log("===========================================================\n")
                                 }
-
-                                iam.removeRoleFromInstanceProfile(removeProfileParams, function(err, removed) {
-                                    if (err) {
-                                        console.log(err);
-                                    } else {
-                                        console.log("Removed instance profile for: " + role.RoleName);
-                                        console.log(removed)
+                                
+                                removedProfile.InstanceProfiles.forEach(function(profile) {
+                                    let removeProfileParams = {
+                                        InstanceProfileName: profile.InstanceProfileName,
+                                        RoleName: role.RoleName
                                     }
+    
+                                    iam.removeRoleFromInstanceProfile(removeProfileParams, function(err, removed) {
+                                        if (err) {
+                                            console.log(err);
+                                        } else {
+                                            console.log("Removed instance profile for: " + role.RoleName);
+                                            console.log(removed)
+                                        }
+                                    })
                                 })
-                            })
+                            }
+                        })
+    
+                        let deleteRoleParams = {
+                            RoleName: role.RoleName
                         }
-                    })
-
-                    let deleteRoleParams = {
-                        RoleName: role.RoleName
+    
+                        iam.deleteRole(deleteRoleParams, function(err, deletedRole) {
+                            if (err) {
+                                console.log("DELETE ERROR FOR: " + role.RoleName);
+                                console.log(err.toString().substring(0, 100));
+                                console.log("===========================================================\n")
+                            } else {
+                                console.log("ROLE DELETED: " + role.RoleName)
+                            }
+                        })
                     }
 
-                    iam.deleteRole(deleteRoleParams, function(err, deletedRole) {
-                        if (err) {
-                            console.log("DELETE ERROR FOR: " + role.RoleName);
-                            console.log(err.toString().substring(0, 100));
-                            console.log("===========================================================\n")
-                        } else {
-                            console.log("ROLE DELETED: " + role.RoleName)
-                        }
-                    })
                 }
             })
         })
     }
 });
-
