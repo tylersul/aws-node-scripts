@@ -17,12 +17,15 @@ let params = {
 // ================================================================== //
 // ====================== User Deletion ============================= //
 // ================================================================== //
+// GET - List of all users in account
 let users = iam.listUsers(params, function(err, foundUsers) {
+    // Output error message if necessary
     if (err) {
         console.log(err);
     } else {
+        // Create users array variable containing the user details for all in account
         let users = foundUsers.Users;
-        
+        console.log(users)
         users.forEach(function(user) {
             
         if (user.PasswordLastUsed == undefined) {
