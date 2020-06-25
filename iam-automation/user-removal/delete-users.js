@@ -8,8 +8,11 @@ let iam = new AWS.IAM({apiVersion: '2010-05-08'});
 // ====================== Process User Input ======================== //
 // ================================================================== //
 // User input determines the amount of roles to list & delete if they fit the criteria
+// Process.Argv array contains information about the execution and input is stored in 3rd index of array
 let items = process.argv[2];
 
+// Filtering parameter for the List Users AWS API call
+// User determines the max amount of items (in this case, users) to search and return
 let params = {
     MaxItems: items
 }
@@ -19,62 +22,88 @@ let params = {
 // ================================================================== //
 // GET - List of all users in account
 let users = iam.listUsers(params, function(err, foundUsers) {
+
     // Output error message if necessary
     if (err) {
         console.log(err);
     } else {
-        // Create users array variable containing the user details for all in account
+
+        // Create users array variable containing user objects for all in AWS account
+        // Returns: Path, Username, UserId, Arn, Created Date, & Tags
         let users = foundUsers.Users;
-        console.log(users)
+
+        // Iterate over users array 
         users.forEach(function(user) {
             
+        // If a user has never logged into the console, they will not have a "PasswordLastUsed" value in their user object
+        // Output username to console if no password exists
         if (user.PasswordLastUsed == undefined) {
             console.log("===========================================================")
             console.log("No Console Password for: " + user.UserName)
             console.log("===========================================================\n")
 
+            // Required parameters for ListAccessKeys AWS API call
             let accessKeyParams = {
                 UserName: user.UserName
             }
             
+            // List Access Keys API call
             iam.listAccessKeys(accessKeyParams, function(err, accessDetail) {
                 if (err) {
                     console.log(err);
                 } else {
-
+                    
+                    // Callback returns object for requested user with: Response Metadata & Access Key Metadata array of access key objects
+                    // Access Key Metadata inclues: Username, Access Key ID, Status (active or not), and Create Date
+                    // If that access key metadata is blank, no key exists for the user
                     if (accessDetail.AccessKeyMetadata.length < 1) {
                         console.log("===========================================================")
                         console.log("No access key for: " + user.UserName +". Moving to delete.");
                         console.log("===========================================================\n");
-                    
+                        
+                        // Required params for ListUserPolicies AWS API Call
                         let userPolicyParams = {
                             UserName: user.UserName
                         }
 
+                        // List User Policies API call
                         iam.listUserPolicies(userPolicyParams, function(err, userPolicy) {
                             if (err) {
                                 console.log(err.toString().substring(0, 20));
                             } else {
+
+                                // List any associated inline policies attached to the current user from the users array
+                                // No inline policies attached to the user will return an empty [] array response
                                 console.log("===========================================================");
                                 console.log("Inline policies for: " + user.UserName);
                                 console.log(userPolicy.PolicyNames);
                                 console.log("===========================================================\n");
 
+                                // PolicyNames array will contain any associated inline policies
+                                // If none are attached, array will be empty and therefore the length will be 0
                                 if (userPolicy.PolicyNames.length > 0) {
+
+                                    // Create array variable containing the policy objects for each attached policy
                                     let userInlinePolicies = userPolicy.PolicyNames;
 
+                                    // Iterate over each inline policy for the specific user
                                     userInlinePolicies.forEach(function(inline) {
+
+                                        // Required parameters for Delete User Policy API call
                                         let inlineParams = {
                                             UserName: user.UserName,
                                             PolicyName: inline
                                         }
 
+                                        // Delete User Policy API call
                                         iam.deleteUserPolicy(inlineParams, function(err, inlineDelete) {
                                             if (err) {
                                                 console.log("===========================================================")
                                                 console.log(err);
                                                 console.log("===========================================================\n");
                                             } else {
+
+                                                // Output details on deleted policy and the associated user
                                                 console.log("===========================================================")
                                                 console.log("Deleted user policy named: " + inline + ". For user: " + user.UserName);
                                                 console.log(inlineDelete)
@@ -86,10 +115,14 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                             }
                         });
                         
+                        // List Attached User Policies API call
+                        // This call lists the Managed policies attached to the user, as opposed to the inline policies
                         iam.listAttachedUserPolicies(userPolicyParams, function(err, attached) {
                             if (err) {
                                 console.log(err);
                             } else {
+
+                                // Same logic as with Inline Policies, if the result contains attached policies the AttachedPolicies array length will be > 0
                                 if (attached.AttachedPolicies.length > 0) {
                                     console.log("===========================================================")
                                     console.log("Managed Policies for: " + user.UserName);
