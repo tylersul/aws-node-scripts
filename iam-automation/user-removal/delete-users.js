@@ -1,6 +1,7 @@
 // ================================================================== //
 // ====================== Library Requirement ======================= //
 // ================================================================== //
+// Require AWS SDK library 
 let AWS = require("aws-sdk");
 let iam = new AWS.IAM({apiVersion: '2010-05-08'});
 
@@ -129,18 +130,25 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                     console.log(attached.AttachedPolicies);
                                     console.log("===========================================================\n");
 
+                                    // Created array variable inclusive of all attached policy objects
                                     let managedPolicies = attached.AttachedPolicies;
 
+                                    // Iterate over the array 
                                     managedPolicies.forEach(function(policy) {
 
+                                        // Required parameters for Detach User Policy API call
                                         let managedParams = {
                                             UserName: user.UserName,
                                             PolicyArn: policy.PolicyArn
                                         }
+                                        
+                                        // Detach User Policy API call
                                         iam.detachUserPolicy(managedParams, function(err, detached) {
                                             if (err) {
                                                 console.log(err);
                                             } else {
+
+                                                // Log details about managed policies that were detached from the user
                                                 console.log("===========================================================")
                                                 console.log("Detached managed policy for: " + user.UserName)
                                                 console.log(detached.ResponseMetadata);
@@ -152,28 +160,36 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                             }
                         })
 
-                        // TODO: DETACH USER POLICIES IF THEY EXIST
-
+                        
+                        // List Groups For User API call
                         // Reusing the Access Key Params for DRYness
                         iam.listGroupsForUser(accessKeyParams, function(err, userGroups) {
                             if (err) {
                                 console.log(err.toString().substring(0, 100))
                             } else {
+
+                                // Output groups the user is associated with
                                 console.log("===========================================================");
                                 console.log("User groups for: " + user.UserName);
                                 console.log(userGroups.Groups);
                                 console.log("===========================================================\n");
+
+                                // If the user is in any groups, the Groups array in the userGroups callback will have a length > 0
                                 if (userGroups.Groups.length > 0) {
 
+                                    // Create array variable inclusive of all user groups
                                     let groups = userGroups.Groups;
 
+                                    // Iterate over groups array
                                     groups.forEach(function(group) {
 
+                                        // Required parameters for Remove User From Group API call
                                         let groupRemoveParams = {
                                             GroupName: group.GroupName,
                                             UserName: user.UserName
                                         }
 
+                                        // Remove User From Group API Call
                                         iam.removeUserFromGroup(groupRemoveParams, function(err, removedGroup) {
                                             if (err) {
                                                 console.log("===========================================================");
@@ -191,11 +207,13 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                             }
                         });
 
-                        // GET: Login Profile
+                        // GET: Login Profile, if exists
+                        // Required parameters for Get Login Profile API call
                         let loginProfileParams = {
                             UserName: user.UserName
                         }
 
+                        // Get Login Profile API call
                         iam.getLoginProfile(loginProfileParams, function(err, foundProfile) {
                             if (err) {
                                 console.log("===========================================================");
@@ -207,10 +225,13 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                 console.log(foundProfile.LoginProfile);
                                 console.log("===========================================================\n");
 
+                                // If the user has a login profile, move to delete 
+                                // Required parameters for Delete Login Profile API call
                                 let deleteProfileParams = {
                                     UserName: user.UserName
                                 }
-        
+                                
+                                // Delete Login Profile API call
                                 iam.deleteLoginProfile(deleteProfileParams, function(err, deletedProfile) {
                                     if (err) {
                                         console.log("DELETE PROFILE ERROR FOR USER: " + user.UserName);
@@ -225,11 +246,13 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                             }
                         })
 
-
+                        // Delete user once all the pre-reqs have been satisfied for user deletion 
+                        // (detach/delete polices, remove from groups/login profiles)
                         let deleteUserParams = {
                             UserName: user.UserName
                         }
 
+                        // Delete User API Call
                         iam.deleteUser(deleteUserParams, function(err, deletedUser) {
                             if (err) {
                                 console.log("===========================================================");
@@ -245,33 +268,48 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                         });
 
                     } else {
+
+                        // Still in List User Access Keys API call, this block executes if user has access keys in use
+                        // Create array of access keys, since users can have multiple associated with them
                         let accessKeys = accessDetail.AccessKeyMetadata
-                    
+                        
+                        // Iterate over access keys in the array
                         accessKeys.forEach(function(key) {
-    
+                            
+                            // Required parameters for Get Access Key Last Used API call
                             let accessUseParams = {
                                 AccessKeyId: key.AccessKeyId
                             }
-    
+                            
+                            // Get Access Key Last Used API call
                             iam.getAccessKeyLastUsed(accessUseParams, function(err, keyDetail) {
                                 if (err) {
-                                    console.log(err)
+                                    console.log("===========================================================");
+                                    console.log(err);
+                                    console.log("===========================================================\n");
                                 } else {
-    
+                                    
+                                    // Variable to hold value of the date timestamp the access key was last used
                                     userLastUsedTimestamp = new Date(keyDetail.AccessKeyLastUsed.LastUsedDate)
-    
+                                    
+                                    // Cuttoff date variable defines the timeframe for which keys should be deleted
+                                    // As currently defined, all keys not used in the last 180 days will be removed
                                     cutoffDate = new Date(new Date().setDate(new Date().getDate()-180))
                                     
+                                    // Compare the cutoff date to the date the key was last used
+                                    // If either of those qualifiers hit, the key will be deleted
                                     if (userLastUsedTimestamp < cutoffDate || keyDetail.AccessKeyLastUsed.LastUsedDate == undefined) {
                                         console.log("===========================================================")
                                         console.log("Access key to delete: " + key.UserName)
                                         console.log("===========================================================\n")
-    
+                                        
+                                        // Required parameters for Delete Access Key API call
                                         let deleteParams = {
                                             AccessKeyId: key.AccessKeyId,
                                             UserName: user.UserName
                                         }
-    
+                                        
+                                        // Delete Access Key API call
                                         iam.deleteAccessKey(deleteParams, function(err, deletedKey) {
                                             if (err) {
                                                 console.log(err);
@@ -282,7 +320,9 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                                 console.log("===========================================================\n");
                                             }
                                         });
-    
+                                        
+                                        // The remaining portion of this block of code in the else statement is the same as above
+                                        // Inline comments can be found in the if block
                                         let userPolicyParams = {
                                             UserName: user.UserName
                                         }
