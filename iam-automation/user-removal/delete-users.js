@@ -22,7 +22,7 @@ let params = {
 // ====================== User Deletion ============================= //
 // ================================================================== //
 // GET - List of all users in account
-let users = iam.listUsers(params, function(err, foundUsers) {
+let users = iam.listUsers(params, (err, foundUsers) => {
 
     // Output error message if necessary
     if (err) {
@@ -49,7 +49,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
             }
             
             // List Access Keys API call
-            iam.listAccessKeys(accessKeyParams, function(err, accessDetail) {
+            iam.listAccessKeys(accessKeyParams, (err, accessDetail) => {
                 if (err) {
                     console.log(err);
                 } else {
@@ -68,7 +68,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                         }
 
                         // List User Policies API call
-                        iam.listUserPolicies(userPolicyParams, function(err, userPolicy) {
+                        iam.listUserPolicies(userPolicyParams, (err, userPolicy) => {
                             if (err) {
                                 console.log(err.toString().substring(0, 20));
                             } else {
@@ -97,7 +97,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                         }
 
                                         // Delete User Policy API call
-                                        iam.deleteUserPolicy(inlineParams, function(err, inlineDelete) {
+                                        iam.deleteUserPolicy(inlineParams, (err, inlineDelete) => {
                                             if (err) {
                                                 console.log("===========================================================")
                                                 console.log(err);
@@ -118,7 +118,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                         
                         // List Attached User Policies API call
                         // This call lists the Managed policies attached to the user, as opposed to the inline policies
-                        iam.listAttachedUserPolicies(userPolicyParams, function(err, attached) {
+                        iam.listAttachedUserPolicies(userPolicyParams, (err, attached) => {
                             if (err) {
                                 console.log(err);
                             } else {
@@ -134,7 +134,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                     let managedPolicies = attached.AttachedPolicies;
 
                                     // Iterate over the array 
-                                    managedPolicies.forEach(function(policy) {
+                                    managedPolicies.forEach(policy => {
 
                                         // Required parameters for Detach User Policy API call
                                         let managedParams = {
@@ -143,7 +143,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                         }
                                         
                                         // Detach User Policy API call
-                                        iam.detachUserPolicy(managedParams, function(err, detached) {
+                                        iam.detachUserPolicy(managedParams, (err, detached) => {
                                             if (err) {
                                                 console.log(err);
                                             } else {
@@ -163,7 +163,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                         
                         // List Groups For User API call
                         // Reusing the Access Key Params for DRYness
-                        iam.listGroupsForUser(accessKeyParams, function(err, userGroups) {
+                        iam.listGroupsForUser(accessKeyParams, (err, userGroups) => {
                             if (err) {
                                 console.log(err.toString().substring(0, 100))
                             } else {
@@ -181,7 +181,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                     let groups = userGroups.Groups;
 
                                     // Iterate over groups array
-                                    groups.forEach(function(group) {
+                                    groups.forEach(group => {
 
                                         // Required parameters for Remove User From Group API call
                                         let groupRemoveParams = {
@@ -190,7 +190,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                         }
 
                                         // Remove User From Group API Call
-                                        iam.removeUserFromGroup(groupRemoveParams, function(err, removedGroup) {
+                                        iam.removeUserFromGroup(groupRemoveParams, (err, removedGroup) => {
                                             if (err) {
                                                 console.log("===========================================================");
                                                 console.log(err);
@@ -214,7 +214,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                         }
 
                         // Get Login Profile API call
-                        iam.getLoginProfile(loginProfileParams, function(err, foundProfile) {
+                        iam.getLoginProfile(loginProfileParams, (err, foundProfile) => {
                             if (err) {
                                 console.log("===========================================================");
                                 console.log("No login profile for: " + user.UserName);
@@ -232,7 +232,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                 }
                                 
                                 // Delete Login Profile API call
-                                iam.deleteLoginProfile(deleteProfileParams, function(err, deletedProfile) {
+                                iam.deleteLoginProfile(deleteProfileParams, (err, deletedProfile) => {
                                     if (err) {
                                         console.log("DELETE PROFILE ERROR FOR USER: " + user.UserName);
                                         console.log(err);
@@ -253,7 +253,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                         }
 
                         // Delete User API Call
-                        iam.deleteUser(deleteUserParams, function(err, deletedUser) {
+                        iam.deleteUser(deleteUserParams, (err, deletedUser) => {
                             if (err) {
                                 console.log("===========================================================");
                                 console.log("DELETE USER ERROR FOR: " + user.UserName);
@@ -274,7 +274,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                         let accessKeys = accessDetail.AccessKeyMetadata
                         
                         // Iterate over access keys in the array
-                        accessKeys.forEach(function(key) {
+                        accessKeys.forEach(key => {
                             
                             // Required parameters for Get Access Key Last Used API call
                             let accessUseParams = {
@@ -282,7 +282,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                             }
                             
                             // Get Access Key Last Used API call
-                            iam.getAccessKeyLastUsed(accessUseParams, function(err, keyDetail) {
+                            iam.getAccessKeyLastUsed(accessUseParams, (err, keyDetail) => {
                                 if (err) {
                                     console.log("===========================================================");
                                     console.log(err);
@@ -310,7 +310,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                         }
                                         
                                         // Delete Access Key API call
-                                        iam.deleteAccessKey(deleteParams, function(err, deletedKey) {
+                                        iam.deleteAccessKey(deleteParams, (err, deletedKey) => {
                                             if (err) {
                                                 console.log(err);
                                             } else {
@@ -327,7 +327,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                             UserName: user.UserName
                                         }
                 
-                                        iam.listUserPolicies(userPolicyParams, function(err, userPolicy) {
+                                        iam.listUserPolicies(userPolicyParams, (err, userPolicy) => {
                                             if (err) {
                                                 console.log(err.toString().substring(0, 100));
                                             } else {
@@ -339,13 +339,13 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                                 if (userPolicy.PolicyNames.length > 0) {
                                                     let userInlinePolicies = userPolicy.PolicyNames;
                 
-                                                    userInlinePolicies.forEach(function(inline) {
+                                                    userInlinePolicies.forEach(inline => {
                                                         let inlineParams = {
                                                             UserName: user.UserName,
                                                             PolicyName: inline
                                                         }
                 
-                                                        iam.deleteUserPolicy(inlineParams, function(err, inlineDelete) {
+                                                        iam.deleteUserPolicy(inlineParams, (err, inlineDelete) => {
                                                             if (err) {
                                                                 console.log("===========================================================")
                                                                 console.log(err);
@@ -362,7 +362,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                             }
                                         });
                                         
-                                        iam.listAttachedUserPolicies(userPolicyParams, function(err, attached) {
+                                        iam.listAttachedUserPolicies(userPolicyParams, (err, attached) => {
                                             if (err) {
                                                 console.log(err);
                                             } else {
@@ -374,13 +374,13 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                 
                                                     let managedPolicies = attached.AttachedPolicies;
                 
-                                                    managedPolicies.forEach(function(policy) {
+                                                    managedPolicies.forEach(policy => {
                 
                                                         let managedParams = {
                                                             UserName: user.UserName,
                                                             PolicyArn: policy.PolicyArn
                                                         }
-                                                        iam.detachUserPolicy(managedParams, function(err, detached) {
+                                                        iam.detachUserPolicy(managedParams, (err, detached) => {
                                                             if (err) {
                                                                 console.log(err);
                                                             } else {
@@ -397,7 +397,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                 
                 
                                         // Reusing the Access Key Params for DRYness
-                                        iam.listGroupsForUser(accessKeyParams, function(err, userGroups) {
+                                        iam.listGroupsForUser(accessKeyParams, (err, userGroups) => {
                                             if (err) {
                                                 console.log(err.toString().substring(0, 100))
                                             } else {
@@ -416,7 +416,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                                             UserName: user.UserName
                                                         }
                 
-                                                        iam.removeUserFromGroup(groupRemoveParams, function(err, removedGroup) {
+                                                        iam.removeUserFromGroup(groupRemoveParams, (err, removedGroup) => {
                                                             if (err) {
                                                                 console.log("===========================================================");
                                                                 console.log(err);
@@ -438,7 +438,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                             UserName: user.UserName
                                         }
                 
-                                        iam.getLoginProfile(loginProfileParams, function(err, foundProfile) {
+                                        iam.getLoginProfile(loginProfileParams, (err, foundProfile) => {
                                             if (err) {
                                                 console.log("===========================================================");
                                                 console.log("No login profile for: " + user.UserName);
@@ -453,7 +453,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                                     UserName: user.UserName
                                                 }
                         
-                                                iam.deleteLoginProfile(deleteProfileParams, function(err, deletedProfile) {
+                                                iam.deleteLoginProfile(deleteProfileParams, (err, deletedProfile) => {
                                                     if (err) {
                                                         console.log("DELETE PROFILE ERROR FOR USER: " + user.UserName);
                                                         console.log(err);
@@ -472,7 +472,7 @@ let users = iam.listUsers(params, function(err, foundUsers) {
                                             UserName: user.UserName
                                         }
                 
-                                        iam.deleteUser(deleteUserParams, function(err, deletedUser) {
+                                        iam.deleteUser(deleteUserParams, (err, deletedUser) => {
                                             if (err) {
                                                 console.log("===========================================================");
                                                 console.log("DELETE USER ERROR FOR: " + user.UserName);
